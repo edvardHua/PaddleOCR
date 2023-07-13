@@ -36,6 +36,9 @@ from ppstructure.layout.predict_layout import LayoutPredictor
 from ppstructure.table.predict_table import TableSystem, to_excel
 from ppstructure.utility import parse_args, draw_structure_result
 
+from test_translation import en_to_cn, count_characters
+from res_to_md import res2md
+
 logger = get_logger()
 
 
@@ -199,7 +202,7 @@ def save_structure_res(res, save_folder, img_name, img_idx=0):
             f.write('{}\n'.format(json.dumps(region)))
 
             if region['type'].lower() == 'table' and len(region[
-                    'res']) > 0 and 'html' in region['res']:
+                                                             'res']) > 0 and 'html' in region['res']:
                 excel_path = os.path.join(
                     excel_save_folder,
                     '{}_{}.xlsx'.format(region['bbox'], img_idx))
@@ -288,17 +291,71 @@ def main(args):
                 all_res += res
 
         if args.recovery and all_res != []:
-            try:
-                convert_info_docx(img, all_res, save_folder, img_name)
-            except Exception as ex:
-                logger.error("error in layout recovery image:{}, err msg: {}".
-                             format(image_file, ex))
-                continue
+
+            res2md(all_res, "output/md/{}.md".format(img_name), True)
+
+            # TODO: 加入翻译成中文的功能
+            # for i in range(len(all_res)):
+            #     cur = all_res[i]
+            #     if cur['type'] != "text": continue
+            #
+            #     # 遍历，拼接所有行
+            #     cur_en_text = ""
+            #     for t in cur['res']:
+            #         cur_en_text += t['text']
+            #
+            #     cur_zh_text = en_to_cn(cur_en_text)
+            #     cur_zh_len = sum(count_characters(cur_zh_text))
+            #
+            #     cur_zh_res = []
+            #     pos = 0
+            #     for t in cur['res']:
+            #         # 两个英文宽度对应一个中文
+            #         cur_en_len = sum(count_characters(t['text'])) // 2
+            #         zh_res = deepcopy(t)
+            #         zh_res['text'] = cur_zh_text[pos:pos + cur_en_len]
+            #         pos += cur_en_len
+            #         cur_zh_res.append(zh_res)
+            #         if pos >= cur_zh_len: break
+            #     # TODO: 完善后续，当翻译出来的中文行数和英文对应不上时该如何做
+            #     cur['res'] = cur_zh_res
+            #     all_res[i] = cur
+
+            convert_info_docx(img, all_res, save_folder, img_name)
+
+            # try:
+            #     convert_info_docx(img, all_res, save_folder, img_name)
+            # except Exception as ex:
+            #     logger.error("error in layout recovery image:{}, err msg: {}".
+            #                  format(image_file, ex))
+            #     continue
         logger.info("Predict time : {:.3f}s".format(time_dict['all']))
+
+
+def change_path(args):
+    """
+    如果不使用 api，需要修改路径才能正常运行
+    """
+    # rec_char_dict_path, vis_font_path, e2e_char_dict_path
+
+    rec_v = args.__getattribute__('rec_char_dict_path')
+    rec_v = rec_v.replace("./", "../")
+    args.__setattr__('rec_char_dict_path', rec_v)
+
+    vis_v = args.__getattribute__('vis_font_path')
+    vis_v = vis_v.replace("./", "../")
+    args.__setattr__('vis_font_path', vis_v)
+
+    e2e_v = args.__getattribute__('e2e_char_dict_path')
+    e2e_v = e2e_v.replace("./", "../")
+    args.__setattr__('e2e_char_dict_path', e2e_v)
+    return args
 
 
 if __name__ == "__main__":
     args = parse_args()
+    args = change_path(args)
+
     if args.use_mp:
         p_list = []
         total_process_num = args.total_process_num
