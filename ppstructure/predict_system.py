@@ -38,6 +38,8 @@ from ppstructure.utility import parse_args, draw_structure_result
 
 from test_translation import en_to_cn, count_characters
 from res_to_md import res2md
+from md2pdf.core import md2pdf
+from glob import glob
 
 logger = get_logger()
 
@@ -291,8 +293,17 @@ def main(args):
                 all_res += res
 
         if args.recovery and all_res != []:
+            res2md(all_res, "output/md/{}.md".format(img_name), False)
 
-            res2md(all_res, "output/md/{}.md".format(img_name), True)
+            # md2pdf(pdf_file_path,
+            #        md_content=None,
+            #        md_file_path=None,
+            #        css_file_path=None,
+            #        base_url=None)
+
+            md2pdf(pdf_file_path="output/pdf/{}.pdf".format(img_name),
+                   md_file_path="output/md/{}.md".format(img_name),
+                   base_url="output/md")
 
             # TODO: 加入翻译成中文的功能
             # for i in range(len(all_res)):
@@ -356,17 +367,27 @@ if __name__ == "__main__":
     args = parse_args()
     args = change_path(args)
 
-    if args.use_mp:
-        p_list = []
-        total_process_num = args.total_process_num
-        for process_id in range(total_process_num):
-            cmd = [sys.executable, "-u"] + sys.argv + [
-                "--process_id={}".format(process_id),
-                "--use_mp={}".format(False)
-            ]
-            p = subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stdout)
-            p_list.append(p)
-        for p in p_list:
-            p.wait()
+    os.makedirs("output/md", exist_ok=True)
+    os.makedirs("output/pdf", exist_ok=True)
+
+    batch_mode = False
+    ori_path = "pdf_files"
+    if batch_mode:
+        for f in glob("%s/*.pdf"):
+            args.image_dir = f
+            main(args)
     else:
-        main(args)
+        if args.use_mp:
+            p_list = []
+            total_process_num = args.total_process_num
+            for process_id in range(total_process_num):
+                cmd = [sys.executable, "-u"] + sys.argv + [
+                    "--process_id={}".format(process_id),
+                    "--use_mp={}".format(False)
+                ]
+                p = subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stdout)
+                p_list.append(p)
+            for p in p_list:
+                p.wait()
+        else:
+            main(args)

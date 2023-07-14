@@ -11,9 +11,8 @@ from test_translation import en_to_cn
 
 def res2md(res, md_path, translate=False):
     f = open(md_path, "w")
-
+    bn = (os.path.basename(md_path)).replace(".md", "")
     for i in range(len(res)):
-        print(i, len(res))
         cur = res[i]
 
         if cur['type'] == "title":
@@ -43,20 +42,19 @@ def res2md(res, md_path, translate=False):
 
         if cur['type'] == "figure":
             basepath = os.path.split(md_path)[0]
-            img_path = os.path.join(basepath, "%d.jpg" % i)
+            img_path = os.path.join(basepath, "%s_figure_%d.jpg" % (bn, i))
             cv2.imwrite(img_path, cur['img'])
             f.write("\n")
-            f.write("![](%s)" % ("%d.jpg" % i))
+            f.write("![](%s)" % ("%s_figure_%d.jpg" % (bn, i)))
             f.write("\n")
 
         if cur['type'] == "table":
             basepath = os.path.split(md_path)[0]
-            img_path = os.path.join(basepath, "%d.jpg" % i)
+            img_path = os.path.join(basepath, "%s_table_%d.jpg" % (bn, i))
             cv2.imwrite(img_path, cur['img'])
             f.write("\n")
-            f.write("![](%s)" % ("%d.jpg" % i))
+            f.write("![](%s)" % ("%s_table_%d.jpg" % (bn, i)))
             f.write("\n")
-
         # 每写完一段，换行
         f.write("\n")
 
